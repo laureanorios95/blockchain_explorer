@@ -42,13 +42,17 @@ func MakeMigrations() error {
 	//      );`
 	q := `CREATE TABLE IF NOT EXISTS blocks (
 				hash VARCHAR(64),
-				prev_block VARCHAR(64),
-				time INTEGER,
-				bits INTEGER,
-				fee INTEGER,
-				nonce INTEGER PRIMARY KEY,
-				n_tx INTEGER,
-				created_at TIMESTAMP NOT NULL
+				size VARCHAR(64),
+				stripped_size VARCHAR(64),
+				weight VARCHAR(64),
+				number VARCHAR(64),
+				version VARCHAR(64),
+				merkle_root VARCHAR(64),
+				timestamp DATETIME,
+				nonce VARCHAR(64) PRIMARY KEY,
+				bits VARCHAR(64),
+				coinbase_param VARCHAR(64),
+				transaction_count VARCHAR(64)
 			);`
 	_, err := db.Exec(q)
 	if err != nil {

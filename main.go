@@ -1,9 +1,3 @@
-// make a functional CRUD with SQLite
-// all requests will be get type
-// get the latest block from blockchain explorer API https://www.blockchain.com/explorer/api and save it
-// get SQLite database with all the blocks saved until the moment refresh it weekly or some period
-// get specific block saved in database
-// continue with the next steps
 package main
 
 import (
@@ -11,7 +5,7 @@ import (
 	"flag"
 	"log"
 	"net/http"
-	"strconv"
+	"time"
 )
 
 func main() {
@@ -63,15 +57,8 @@ func BlocksHandler(w http.ResponseWriter, r *http.Request) {
 func GetBlock(w http.ResponseWriter, r *http.Request) {
 	// obtenemos el valor pasado en la url como query
 	// correspondiente a id, del tipo /blocks?nonce=0123456789.
-	nonceStr := r.URL.Query().Get("nonce")
-	// Convertimos el valor obtenido del query a un int, de ser
-	// posible.
-	nonce, err := strconv.Atoi(nonceStr)
-	if err != nil {
-		http.Error(w, "Query nonce debe ser un número",
-			http.StatusBadRequest)
-		return
-	}
+	nonce := r.URL.Query().Get("nonce")
+
 	var blocks Block
 	// Solicitando el bloque descrito en el parametro URL
 	block, err := blocks.GetOne(nonce)
@@ -79,8 +66,6 @@ func GetBlock(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
-	// Convirtiendo el slice de bloques a formato JSON,
-	// retorna un []byte y un error.
 	j, err := json.Marshal(block)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -88,8 +73,6 @@ func GetBlock(w http.ResponseWriter, r *http.Request) {
 	}
 	// Escribiendo el código de respuesta.
 	w.WriteHeader(http.StatusOK)
-	// Estableciendo el tipo de contenido del cuerpo de la
-	// respuesta.
 	w.Header().Set("Content-Type", "application/json")
 	// Escribiendo la respuesta, es decir nuestro slice de bloques
 	// en formato JSON.
@@ -97,7 +80,6 @@ func GetBlock(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetBlocks(w http.ResponseWriter, r *http.Request) {
-	// Puntero a una estructura de tipo Block.
 	b := new(Block)
 	// Solicitando todos los bloques en la base de datos.
 	blocks, err := b.GetAll()
@@ -105,17 +87,12 @@ func GetBlocks(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
-	// Convirtiendo el slice de bloques a formato JSON,
-	// retorna un []byte y un error.
 	j, err := json.Marshal(blocks)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	// Escribiendo el código de respuesta.
 	w.WriteHeader(http.StatusOK)
-	// Estableciendo el tipo de contenido del cuerpo de la
-	// respuesta.
 	w.Header().Set("Content-Type", "application/json")
 	// Escribiendo la respuesta, es decir nuestro slice de bloques
 	// en formato JSON.
@@ -123,64 +100,57 @@ func GetBlocks(w http.ResponseWriter, r *http.Request) {
 }
 
 func AddBlock(w http.ResponseWriter, r *http.Request) {
-	var (
-		block, hash Block
-	)
-	// Tomando el cuerpo de la petición, en formato JSON, y
-	// decodificándola e la variable block que acabamos de
-	// declarar.
-	resp, err := http.Get("https://blockchain.info/latestblock")
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusServiceUnavailable)
-		return
+	type Period struct {
+		Start time.Time `json:"start"`
+		End   time.Time `json:"end"`
 	}
-	err = json.NewDecoder(resp.Body).Decode(&hash)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-	resp.Body.Close()
+	var period Period
 
-	res, err := http.Get("https://blockchain.info/rawblock/" + hash.Hash)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusServiceUnavailable)
-		return
-	}
-	err = json.NewDecoder(res.Body).Decode(&block)
-	if err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&period); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	// Creamos la nueva nota gracias al método Create.
-	err = block.Create()
+	if period.End.Sub(period.Start) > time.Duration(2*time.Hour) {
+		http.Error(w, "Time period is longer than 2 hours", http.StatusBadRequest)
+		return
+	}
+
+	blocks, err := ExecPipeline([]time.Time{period.Start, period.End})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	for _, block := range blocks {
+		if err := block.Create(); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
+	j, err := json.Marshal(blocks)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
+	// Escribiendo la respuesta, es decir nuestro slice de bloques
+	// en formato JSON.
+	w.Write(j)
 }
 
 func DeleteBlock(w http.ResponseWriter, r *http.Request) {
 	// obtenemos el valor pasado en la url como query
-	// correspondiente a id, del tipo /notes?id=3.
-	nonceStr := r.URL.Query().Get("nonce")
-	// Verificamos que no esté vacío.
-	if nonceStr == "" {
+	// correspondiente a id, del tipo /blocks?nonce=123456789.
+	nonce := r.URL.Query().Get("nonce")
+	if nonce == "" {
 		http.Error(w, "Query nonce es requerido",
 			http.StatusBadRequest)
 		return
 	}
-	// Convertimos el valor obtenido del query a un int, de ser
-	// posible.
-	nonce, err := strconv.Atoi(nonceStr)
-	if err != nil {
-		http.Error(w, "Query nonce debe ser un número",
-			http.StatusBadRequest)
-		return
-	}
+
 	var block Block
 	// Borramos la nota con el id correspondiente.
-	err = block.Delete(nonce)
+	err := block.Delete(nonce)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

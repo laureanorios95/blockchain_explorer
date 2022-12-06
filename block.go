@@ -6,39 +6,50 @@ import (
 )
 
 type Block struct {
-	Hash      string    `json:"hash"`
-	PrevBlock string    `json:"prev_block"`
-	Time      int       `json:"time"`
-	Bits      int       `json:"bits"`
-	Fee       int       `json:"fee"`
-	Nonce     int       `json:"nonce"`
-	NTx       int       `json:"n_tx"`
-	CreatedAt time.Time `json:"created_at"`
+	Hash         string    `json:"hash" bigquery:"hash"`
+	Size         int       `json:"size" bigquery:"size"`
+	StrippedSize int       `json:"stripped_size" bigquery:"stripped_size"`
+	Weight       int       `json:"weight" bigquery:"weight"`
+	Number       int       `json:"number" bigquery:"number"`
+	Version      int       `json:"version" bigquery:"version"`
+	MerkleRoot   string    `json:"merkle_root" bigquery:"merkle_root"`
+	Timestamp    time.Time `json:"timestamp" bigquery:"timestamp"`
+	// TimestampMonth   Date type       `json:"timestamp_month" bigquery:"timestamp_month"`
+	Nonce            string `json:"nonce" bigquery:"nonce"`
+	Bits             string `json:"bits" bigquery:"bits"`
+	CoinbaseParam    string `json:"coinbase_param" bigquery:"coinbase_param"`
+	TransactionCount int    `json:"transaction_count" bigquery:"transaction_count"`
 }
 
 func (b Block) Create() error {
-	// Obtenemos la conexión a la base de datos.
 	db := GetConnection()
 	q := `SELECT
             *
             FROM blocks WHERE nonce=?`
 	// Ejecutamos la query
-	_, err := db.Query(q, b.Nonce)
+	row, err := db.Query(q, b.Nonce)
 	if err != nil {
 		return err
 	}
-
+	defer row.Close()
+	if row.Next() {
+		return nil
+	}
 	// Query para insertar los datos en la tabla notes
 	exec := `INSERT INTO blocks (
 		hash,
-		prev_block,
-		time,
-		bits,
-		fee,
+		size,
+		stripped_size,
+		weight,
+		number,
+		version,
+		merkle_root,
+		timestamp,
 		nonce,
-		n_tx,
-		created_at
-		)VALUES(?, ?, ?, ?, ?, ?, ?, ?)`
+		bits,
+		coinbase_param,
+		transaction_count
+		)VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 	// Preparamos la petición para insertar los datos de manera
 	// segura
 	stmt, err := db.Prepare(exec)
@@ -51,7 +62,8 @@ func (b Block) Create() error {
 	// Ejecutamos la petición pasando los datos correspondientes.
 	// El orden es importante, corresponde con los “?” del
 	// string q.
-	r, err := stmt.Exec(b.Hash, b.PrevBlock, b.Time, b.Bits, b.Fee, b.Nonce, b.NTx, time.Now())
+	r, err := stmt.Exec(b.Hash, b.Size, b.StrippedSize, b.Weight, b.Number, b.Version, b.MerkleRoot,
+		b.Timestamp, b.Nonce, b.Bits, b.CoinbaseParam, b.TransactionCount)
 	if err != nil {
 		return err
 	}
@@ -87,24 +99,25 @@ func (b *Block) GetAll() ([]Block, error) {
 	for rows.Next() {
 		// Escaneamos el valor actual de la fila e insertamos el
 		// retorno en los correspondientes campos de la nota.
-		rows.Scan(
-			&b.Hash,
-			&b.PrevBlock,
-			&b.Time,
-			&b.Bits,
-			&b.Fee,
-			&b.Nonce,
-			&b.NTx,
-			&b.CreatedAt,
-		)
+		if err := rows.Scan(
+			&b.Hash, &b.Size, &b.StrippedSize, &b.Weight, &b.Number,
+			&b.Version, &b.MerkleRoot, &b.Timestamp,
+			&b.Nonce, &b.Bits, &b.CoinbaseParam, &b.TransactionCount,
+		); err != nil {
+			return nil, err
+		}
 		// Añadimos cada nueva nota al slice de bloques que
 		// declaramos antes.
 		blocks = append(blocks, *b)
 	}
+	err = rows.Err()
+	if err != nil {
+		return nil, err
+	}
 	return blocks, nil
 }
 
-func (b *Block) GetOne(nonce int) (Block, error) {
+func (b *Block) GetOne(nonce string) (Block, error) {
 	db := GetConnection()
 	q := `SELECT * FROM blocks WHERE nonce=?`
 	row, err := db.Query(q, nonce)
@@ -113,21 +126,23 @@ func (b *Block) GetOne(nonce int) (Block, error) {
 	}
 	defer row.Close()
 	for row.Next() {
-		row.Scan(
-			&b.Hash,
-			&b.PrevBlock,
-			&b.Time,
-			&b.Bits,
-			&b.Fee,
-			&b.Nonce,
-			&b.NTx,
-			&b.CreatedAt,
-		)
+		if err := row.Scan(
+			&b.Hash, &b.Size, &b.StrippedSize, &b.Weight, &b.Number,
+			&b.Version, &b.MerkleRoot, &b.Timestamp,
+			&b.Nonce, &b.Bits, &b.CoinbaseParam, &b.TransactionCount,
+		); err != nil {
+			return Block{}, err
+		}
 	}
+	err = row.Err()
+	if err != nil {
+		return Block{}, err
+	}
+
 	return *b, nil
 }
 
-func (b Block) Delete(nonce int) error {
+func (b Block) Delete(nonce string) error {
 	db := GetConnection()
 	q := `DELETE FROM blocks
             WHERE nonce=?`
