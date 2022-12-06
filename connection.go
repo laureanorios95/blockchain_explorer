@@ -33,13 +33,6 @@ func GetConnection() *sql.DB {
 
 func MakeMigrations() error {
 	db := GetConnection()
-	// q := `CREATE TABLE IF NOT EXISTS notes (
-	//         id INTEGER PRIMARY KEY AUTOINCREMENT,
-	//         title VARCHAR(64) NULL,
-	//         description VARCHAR(200) NULL,
-	//         created_at TIMESTAMP DEFAULT DATETIME,
-	//         updated_at TIMESTAMP NOT NULL
-	//      );`
 	q := `CREATE TABLE IF NOT EXISTS blocks (
 				hash VARCHAR(64),
 				size VARCHAR(64),

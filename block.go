@@ -35,7 +35,7 @@ func (b Block) Create() error {
 	if row.Next() {
 		return nil
 	}
-	// Query para insertar los datos en la tabla notes
+	// Query para insertar los datos en la tabla blocks
 	exec := `INSERT INTO blocks (
 		hash,
 		size,
@@ -91,8 +91,6 @@ func (b *Block) GetAll() ([]Block, error) {
 	}
 	// Cerramos el recurso
 	defer rows.Close()
-	// Declaramos un slice de bloques para que almacene las
-	// bloques que retorna la petición.
 	blocks := []Block{}
 	// El método Next retorna un bool, mientras sea true indicará
 	// que existe un valor siguiente para leer.
@@ -106,8 +104,6 @@ func (b *Block) GetAll() ([]Block, error) {
 		); err != nil {
 			return nil, err
 		}
-		// Añadimos cada nueva nota al slice de bloques que
-		// declaramos antes.
 		blocks = append(blocks, *b)
 	}
 	err = rows.Err()
