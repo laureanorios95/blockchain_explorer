@@ -156,3 +156,54 @@ func (b Block) Delete(nonce string) error {
 	}
 	return nil
 }
+
+func (b Block) selfCount(period []time.Time) (int, error) {
+	db := GetConnection()
+	q := `SELECT COUNT(*) FROM blocks WHERE timestamp BETWEEN '?' AND '?'`
+	// Ejecutamos la query
+	row, err := db.Query(q, period[0], period[1])
+	if err != nil {
+		return -1, err
+	}
+	defer row.Close()
+	if row.Next() {
+		var count int
+		if err := row.Scan(&count); err != nil {
+			return -1, err
+		}
+		return count, nil
+	}
+	return -1, nil
+}
+
+func (b *Block) GetMany(period []time.Time) ([]Block, error) {
+	db := GetConnection()
+	q := `SELECT * FROM blocks WHERE timestamp BETWEEN '?' AND '?'`
+	// Ejecutamos la query
+	rows, err := db.Query(q, period[0], period[1])
+	if err != nil {
+		return []Block{}, err
+	}
+	// Cerramos el recurso
+	defer rows.Close()
+	blocks := []Block{}
+	// El método Next retorna un bool, mientras sea true indicará
+	// que existe un valor siguiente para leer.
+	for rows.Next() {
+		// Escaneamos el valor actual de la fila e insertamos el
+		// retorno en los correspondientes campos de la nota.
+		if err := rows.Scan(
+			&b.Hash, &b.Size, &b.StrippedSize, &b.Weight, &b.Number,
+			&b.Version, &b.MerkleRoot, &b.Timestamp,
+			&b.Nonce, &b.Bits, &b.CoinbaseParam, &b.TransactionCount,
+		); err != nil {
+			return nil, err
+		}
+		blocks = append(blocks, *b)
+	}
+	err = rows.Err()
+	if err != nil {
+		return nil, err
+	}
+	return blocks, nil
+}

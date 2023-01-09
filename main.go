@@ -42,7 +42,7 @@ func BlocksHandler(w http.ResponseWriter, r *http.Request) {
 			GetBlocks(w, r)
 		}
 	case http.MethodPost:
-		AddBlock(w, r)
+		VerifyBlocks(w, r)
 	case http.MethodDelete:
 		DeleteBlock(w, r)
 	default:
@@ -99,7 +99,8 @@ func GetBlocks(w http.ResponseWriter, r *http.Request) {
 	w.Write(j)
 }
 
-func AddBlock(w http.ResponseWriter, r *http.Request) {
+func VerifyBlocks(w http.ResponseWriter, r *http.Request) {
+	b := new(Block)
 	type Period struct {
 		Start time.Time `json:"start"`
 		End   time.Time `json:"end"`
@@ -115,6 +116,32 @@ func AddBlock(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	mainCount, err := mainCount([]time.Time{period.Start, period.End})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	selfCount, err := b.selfCount([]time.Time{period.Start, period.End})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if selfCount == mainCount {
+		blocks, err := b.GetMany([]time.Time{period.Start, period.End})
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		j, err := json.Marshal(blocks)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(j)
+		return
+	}
 	blocks, err := ExecPipeline([]time.Time{period.Start, period.End})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
