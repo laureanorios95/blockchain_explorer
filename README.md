@@ -12,5 +12,5 @@
   - curl -X GET http://localhost:8080/blocks?nonce=NONCE_OF_BLOCK
   - curl -X DELETE http://localhost:8080/blocks?nonce=NONCE_OF_BLOCK
 - Docker setup:
-  - Build the image by using: *docker build -t blockchain-api-image .*
+  - Build the image by using the Dockerfile in the current directory: *docker build -t blockchain-api-image .*
   - Run the container using the image built above: *docker run -it --rm --name blockchain-api-container -p 8080:8080 blockchain-api-image*
