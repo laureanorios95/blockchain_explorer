@@ -4,7 +4,7 @@
 
 ***Instructions:***
 - Needs Google Api json certificate authentication in the root directory and change of respective variables involved in the process.
-- Please add the flag ***--migrate*** to create database tables before processing.
+- Please add the flag ***--migrate*** to create database tables before ingestion.
 - Here are cURL samples to test it in your machine:
   - curl -X POST http://localhost:8080/blocks \
 -H 'Content-Type: application/json' \
