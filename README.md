@@ -1,10 +1,10 @@
 # blockchain-explorerCRD
 
-## **Blockchain Explorer** is an ETL Pipeline that allows You to host your own cointanerized blockchain data blocks.
+## **Blockchain Explorer** is an ETL Pipeline that allows you to host your own cointanerized blockchain data blocks.
 
 ***Instructions:***
 - Needs Google Api json certificate authentication in the root directory and change of respective variables involved in the process.
-- Please add the flag ***--migrate*** in case the database needs migration.
+- Please add the flag ***--migrate*** to create database tables before processing.
 - Here are cURL samples to test it in your machine:
   - curl -X POST http://localhost:8080/blocks \
 -H 'Content-Type: application/json' \
