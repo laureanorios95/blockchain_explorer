@@ -1,5 +1,3 @@
-# blockchain-explorerCRD
-
 ## **Blockchain Explorer** is an ETL Pipeline that allows you to host your own cointanerized blockchain data blocks.
 
 ***Instructions:***
