@@ -1,15 +1,19 @@
-## **Blockchain Explorer** is an ETL Pipeline that allows you to host and manage your own cointanerized blockchain data blocks.
+# Blockchain Explorer
 
-***Instructions:***
+A containerized ETL (Extract, Transform, Load) pipeline for hosting and managing blockchain data blocks. This solution enables you to maintain your own blockchain data infrastructure with ease.
+
+***Prerequisites:***
 - Needs Google Api json certificate authentication in the root directory and change of respective variables involved in the process.
 - Please add the flag ***--migrate*** to create database tables before ingestion.
-- Here are cURL samples to test it in your machine:
+  
+## cURL samples to test it in your machine:
   - curl -X POST http://localhost:8080/blocks \
 -H 'Content-Type: application/json' \
 -d '{"start":"2022-12-02T13:30:10.000Z","end":"2022-12-02T15:30:10.000Z"}'
   - curl -X GET http://localhost:8080/blocks
   - curl -X GET http://localhost:8080/blocks?nonce=NONCE_OF_BLOCK
   - curl -X DELETE http://localhost:8080/blocks?nonce=NONCE_OF_BLOCK
-- Docker setup:
+    
+## Docker setup:
   - Build the image by using the Dockerfile in the current directory: *docker build -t blockchain-api-image .*
   - Run the container using the image built above: *docker run -it --rm --name blockchain-api-container -p 8080:8080 blockchain-api-image*
