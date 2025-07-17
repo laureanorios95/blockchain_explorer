@@ -1,4 +1,4 @@
-## **Blockchain Explorer** is an ETL Pipeline that allows you to host your own cointanerized blockchain data blocks.
+## **Blockchain Explorer** is an ETL Pipeline that allows you to host and manage your own cointanerized blockchain data blocks.
 
 ***Instructions:***
 - Needs Google Api json certificate authentication in the root directory and change of respective variables involved in the process.
