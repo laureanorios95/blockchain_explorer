@@ -3,8 +3,8 @@
 A containerized ETL (Extract, Transform, Load) pipeline for hosting and managing blockchain data blocks. This solution enables you to maintain your own blockchain data infrastructure with ease.
 
 ***Prerequisites:***
-- Needs Google Api json certificate authentication in the root directory and change of respective variables involved in the process.
-- Please add the flag ***--migrate*** to create database tables before ingestion.
+- Google Api json certificate authentication in the root directory and change of respective variables involved in the process.
+- Add the flag ***--migrate*** to create database tables before ingestion.
   
 ## cURL samples to test it in your machine:
   - curl -X POST http://localhost:8080/blocks \
